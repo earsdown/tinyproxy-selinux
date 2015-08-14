@@ -1,0 +1,89 @@
+policy_module(tinyproxy, 1.0.5)
+
+###############################################################################
+#
+# Type Declarations
+#
+###############################################################################
+#
+
+# policy domain
+type tinyproxy_t;
+
+# executable entry point
+type tinyproxy_exec_t;
+
+# make tinyproxy_t as a domain and tinyproxy_exec_t as an entry point into it
+init_daemon_domain(tinyproxy_t, tinyproxy_exec_t)
+
+require {
+        type logrotate_t;
+}
+
+# optionally mark the domain as permissive
+# permissive qlproxyd_t;
+
+# deamon init script
+type tinyproxy_initrc_exec_t;
+init_script_file(tinyproxy_initrc_exec_t)
+
+# not sure if these are needed?
+type_transition logrotate_t tinyproxy_initrc_exec_t : process initrc_t;
+type_transition logrotate_t tinyproxy_exec_t : process initrc_t;
+
+# port used by tinyproxy
+type tinyproxy_port_t;
+corenet_port(tinyproxy_port_t)
+
+# log files at /var/log/tinyproxy
+type tinyproxy_log_t;
+logging_log_file(tinyproxy_log_t)
+logging_log_filetrans(tinyproxy_t, tinyproxy_log_t, { dir file } )
+
+# again, not sure if this is needed
+logging_log_filetrans(logrotate_t, tinyproxy_log_t, file )
+
+# configuration files at /etc/tinyproxy
+type tinyproxy_etc_t;
+files_config_file(tinyproxy_etc_t)
+
+# PID files in /var/run/tinyproxy
+type tinyproxy_var_run_t;
+files_pid_file(tinyproxy_var_run_t)
+
+# started tinyproxy in permissive mode with the above policy, then piped the denials into audit2allow...
+# ...which produced this:
+require {
+	type tinyproxy_t;
+	type tinyproxy_port_t;
+	type tinyproxy_etc_t;
+	type tmp_t;
+	type tinyproxy_var_run_t;
+	type tinyproxy_log_t;
+  type initrc_t;
+	class capability { setuid setgid };
+	class tcp_socket { name_bind setopt bind create accept getattr connect shutdown listen };
+	class file { read create write getattr unlink open };
+	class netlink_route_socket { bind create getattr nlmsg_read };
+	class udp_socket { create connect getattr };
+	class dir { write remove_name search add_name };
+}
+
+#============= tinyproxy_t ==============
+allow tinyproxy_t self:capability { setuid setgid };
+allow tinyproxy_t self:netlink_route_socket { bind create getattr nlmsg_read };
+allow tinyproxy_t self:tcp_socket { setopt bind create accept getattr connect shutdown listen };
+allow tinyproxy_t self:udp_socket { create connect getattr };
+allow tinyproxy_t tinyproxy_etc_t:file { read getattr open };
+allow tinyproxy_t tinyproxy_log_t:file { read open };
+allow tinyproxy_t tinyproxy_port_t:tcp_socket name_bind;
+allow tinyproxy_t tinyproxy_var_run_t:dir { write remove_name search add_name };
+allow tinyproxy_t tinyproxy_var_run_t:file { write getattr read create unlink open };
+allow tinyproxy_t tmp_t:file { write create unlink open };
+auth_read_passwd(tinyproxy_t)
+auth_use_nsswitch(tinyproxy_t)
+corenet_tcp_bind_generic_node(tinyproxy_t)
+corenet_tcp_connect_http_port(tinyproxy_t)
+files_tmp_filetrans(tinyproxy_t, tmp_t, { file dir } )
+sssd_read_public_files(tinyproxy_t)
+sysnet_read_config(tinyproxy_t)
