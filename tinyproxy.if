@@ -1,0 +1,164 @@
+## <summary>policy for tinyproxy</summary>
+
+########################################
+## <summary>
+##	Execute TEMPLATE in the tinyproxy domin.
+## </summary>
+## <param name="domain">
+## <summary>
+##	Domain allowed to transition.
+## </summary>
+## </param>
+#
+interface(`tinyproxy_domtrans',`
+	gen_require(`
+		type tinyproxy_t, tinyproxy_exec_t;
+	')
+
+	corecmd_search_bin($1)
+	domtrans_pattern($1, tinyproxy_exec_t, tinyproxy_t)
+')
+
+########################################
+## <summary>
+##	Execute tinyproxy server in the tinyproxy domain.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`tinyproxy_initrc_domtrans',`
+	gen_require(`
+		type tinyproxy_initrc_exec_t;
+	')
+
+	init_labeled_script_domtrans($1, tinyproxy_initrc_exec_t)
+')
+########################################
+## <summary>
+##	Read tinyproxy's log files.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+## <rolecap/>
+#
+interface(`tinyproxy_read_log',`
+	gen_require(`
+		type tinyproxy_log_t;
+	')
+
+	logging_search_logs($1)
+	read_files_pattern($1, tinyproxy_log_t, tinyproxy_log_t)
+')
+
+########################################
+## <summary>
+##	Append to tinyproxy log files.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`tinyproxy_append_log',`
+	gen_require(`
+		type tinyproxy_log_t;
+	')
+
+	logging_search_logs($1)
+	append_files_pattern($1, tinyproxy_log_t, tinyproxy_log_t)
+')
+
+########################################
+## <summary>
+##	Manage tinyproxy log files
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`tinyproxy_manage_log',`
+	gen_require(`
+		type tinyproxy_log_t;
+	')
+
+	logging_search_logs($1)
+	manage_dirs_pattern($1, tinyproxy_log_t, tinyproxy_log_t)
+	manage_files_pattern($1, tinyproxy_log_t, tinyproxy_log_t)
+	manage_lnk_files_pattern($1, tinyproxy_log_t, tinyproxy_log_t)
+')
+########################################
+## <summary>
+##	Read tinyproxy PID files.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`tinyproxy_read_pid_files',`
+	gen_require(`
+		type tinyproxy_var_run_t;
+	')
+
+	files_search_pids($1)
+	read_files_pattern($1, tinyproxy_var_run_t, tinyproxy_var_run_t)
+')
+
+
+########################################
+## <summary>
+##	All of the rules required to administrate
+##	an tinyproxy environment
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+## <param name="role">
+##	<summary>
+##	Role allowed access.
+##	</summary>
+## </param>
+## <rolecap/>
+#
+interface(`tinyproxy_admin',`
+	gen_require(`
+		type tinyproxy_t;
+		type tinyproxy_initrc_exec_t;
+		type tinyproxy_log_t;
+		type tinyproxy_var_run_t;
+	')
+
+	allow $1 tinyproxy_t:process { signal_perms };
+	ps_process_pattern($1, tinyproxy_t)
+
+    tunable_policy(`deny_ptrace',`',`
+        allow $1 tinyproxy_t:process ptrace;
+    ')
+
+	tinyproxy_initrc_domtrans($1)
+	domain_system_change_exemption($1)
+	role_transition $2 tinyproxy_initrc_exec_t system_r;
+	allow $2 system_r;
+
+	logging_search_logs($1)
+	admin_pattern($1, tinyproxy_log_t)
+
+	files_search_pids($1)
+	admin_pattern($1, tinyproxy_var_run_t)
+	optional_policy(`
+		systemd_passwd_agent_exec($1)
+		systemd_read_fifo_file_passwd_run($1)
+	')
+')
