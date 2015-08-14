@@ -1,0 +1,9 @@
+/etc/rc\.d/init\.d/tinyproxy    --      gen_context(system_u:object_r:tinyproxy_initrc_exec_t,s0)
+
+/etc/tinyproxy(/.*)?            --      gen_context(system_u:object_r:tinyproxy_etc_t,s0)
+
+/usr/sbin/tinyproxy             --      gen_context(system_u:object_r:tinyproxy_exec_t,s0)
+
+/var/log/tinyproxy(/.*)?                gen_context(system_u:object_r:tinyproxy_log_t,s0)
+
+/var/run/tinyproxy(/.*)?                gen_context(system_u:object_r:tinyproxy_var_run_t,s0)
