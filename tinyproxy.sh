@@ -52,11 +52,12 @@ sepolicy manpage -p . -d tinyproxy_t
 /sbin/restorecon -F -R -v /var/log/tinyproxy
 # Fixing the file context on /var/run/tinyproxy
 /sbin/restorecon -F -R -v /var/run/tinyproxy
-# Generate a rpm package for the newly generated policy
+# Fixing the file context on /etc/tinyproxy
 /sbin/restorecon -F -R -v /etc/tinyproxy
-# Generate a rpm package for the newly generated policy
 
+# Label port tcp 8888 for tinyproxy
 /sbin/semanage port -a -t tinyproxy_port_t -p tcp 8888
 
 pwd=$(pwd)
+# Generate a rpm package for the newly generated policy
 #rpmbuild --define "_sourcedir ${pwd}" --define "_specdir ${pwd}" --define "_builddir ${pwd}" --define "_srcrpmdir ${pwd}" --define "_rpmdir ${pwd}" --define "_buildrootdir ${pwd}/.build"  -ba tinyproxy_selinux.spec
