@@ -74,5 +74,5 @@ exit 0
 
 
 %changelog
-* Fri Aug 14 2015 YOUR NAME <YOUR@EMAILADDRESS> 1.0-1
+* Fri Aug 14 2015 earsdown <earsdown@users.noreply.github.com> 1.0-1
 - Initial version
